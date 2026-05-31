@@ -1,4 +1,4 @@
-export const revalidate = 300; // re-fetch every 5 minutes
+export const dynamic = 'force-dynamic';
 
 import { Suspense } from 'react';
 import HeroSection from '@/components/home/hero-section';
