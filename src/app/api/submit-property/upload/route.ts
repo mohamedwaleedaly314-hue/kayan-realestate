@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { uploadImage } from '@/lib/storage';
 import { v4 as uuidv4 } from 'uuid';
 
+export const maxDuration = 30;
+
 const ALLOWED_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
 const MAX_SIZE_BYTES = 5 * 1024 * 1024; // 5 MB
 const MAX_PER_SESSION = 8; // max images per submission

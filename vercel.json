@@ -1,14 +1,4 @@
 {
-  "functions": {
-    "api/admin/upload": {
-      "maxDuration": 30,
-      "memory": 512
-    },
-    "api/submit-property/upload": {
-      "maxDuration": 30,
-      "memory": 512
-    }
-  },
   "headers": [
     {
       "source": "/uploads/(.*)",
