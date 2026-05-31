@@ -11,6 +11,7 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:studio": "prisma studio",
+    "postinstall": "prisma generate",
     "db:seed-admin": "node scripts/seed-admin.js",
     "deploy:use-postgres": "node scripts/switch-to-postgres.js",
     "deploy:use-sqlite": "node scripts/switch-to-sqlite.js"

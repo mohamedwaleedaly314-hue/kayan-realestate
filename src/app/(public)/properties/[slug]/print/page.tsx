@@ -4,6 +4,7 @@ import { formatPrice, formatArea, getPropertyTypeLabel, getPropertyStatusLabel, 
 import Image from 'next/image';
 import { MapPin, Maximize2, BedDouble, Layers, CheckCircle2, Calendar, Clock, Phone } from 'lucide-react';
 import PrintButton from './PrintButton';
+import PrintStyles from './PrintStyles';
 
 async function getProperty(slug: string) {
   const p = await prisma.property.findUnique({
@@ -181,13 +182,7 @@ export default async function PropertyPrintPage({ params }: { params: { slug: st
         </div>
       </div>
 
-      <style jsx global>{`
-        @media print {
-          .no-print { display: none !important; }
-          body { background: white; }
-          @page { margin: 0.5cm; size: A4; }
-        }
-      `}</style>
+      <PrintStyles />
     </div>
   );
 }

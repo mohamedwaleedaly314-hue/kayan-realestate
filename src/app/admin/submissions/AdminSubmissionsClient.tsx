@@ -249,7 +249,7 @@ export default function AdminSubmissionsClient({ initialCounts }: Props) {
         <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-card border border-border rounded-2xl p-6 w-full max-w-md shadow-2xl">
             <h3 className="font-bold text-foreground mb-1">رفض الطلب</h3>
-            <p className="text-sm text-muted-foreground mb-4 truncate">"{rejModal.title}"</p>
+            <p className="text-sm text-muted-foreground mb-4 truncate">&quot;{rejModal.title}&quot;</p>
             <label className="block text-sm font-medium mb-2">سبب الرفض (اختياري)</label>
             <textarea
               value={rejReason}
