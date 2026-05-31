@@ -5,17 +5,21 @@ import PropertyCard from '@/components/properties/property-card';
 import { Button } from '@/components/ui/button';
 
 async function getFeaturedProperties() {
-  return prisma.property.findMany({
-    where: { featured: true, status: 'AVAILABLE', listing_status: 'APPROVED' },
-    take: 6,
-    orderBy: { created_at: 'desc' },
-    include: {
-      images: {
-        orderBy: [{ is_primary: 'desc' }, { sort_order: 'asc' }],
-        take: 1,
+  try {
+    return await prisma.property.findMany({
+      where: { featured: true, status: 'AVAILABLE', listing_status: 'APPROVED' },
+      take: 6,
+      orderBy: { created_at: 'desc' },
+      include: {
+        images: {
+          orderBy: [{ is_primary: 'desc' }, { sort_order: 'asc' }],
+          take: 1,
+        },
       },
-    },
-  });
+    });
+  } catch {
+    return [];
+  }
 }
 
 export default async function FeaturedProperties() {
