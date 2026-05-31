@@ -1,0 +1,47 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# local env files
+.env
+.env*.local
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# prisma
+prisma/migrations/
+
+# local database (SQLite dev only)
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+
+# uploaded files (dev only — use Supabase Storage in production)
+/public/uploads/

@@ -1,0 +1,238 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")       // Supabase pooler URL (for Vercel serverless)
+  directUrl = env("DIRECT_URL")         // Supabase direct URL (for prisma db push)
+}
+
+model Property {
+  id             String   @id @default(cuid())
+  title_ar       String
+  slug           String   @unique
+  description_ar String?
+  price          Float
+  area_m2        Float
+  rooms          Int?
+  floor          Int?
+  has_elevator   Boolean  @default(false)
+  type           String   @default("SALE")
+  status         String   @default("AVAILABLE")
+  district       String
+  lat            Float?
+  lng            Float?
+  views_count    Int      @default(0)
+  featured       Boolean  @default(false)
+  created_at     DateTime @default(now())
+  updated_at     DateTime @updatedAt
+
+  // Listing / submission workflow
+  listing_status     String    @default("APPROVED")  // PENDING | APPROVED | REJECTED
+  rejection_reason   String?
+  // Viewing schedule (set by owner on submission)
+  viewing_days       String?   // JSON array e.g. '["السبت","الأحد"]'
+  viewing_time_from  String?   // "09:00"
+  viewing_time_to    String?   // "17:00"
+  // Free listing
+  is_free_listing    Boolean   @default(false)
+  free_listing_until DateTime?
+
+  images  PropertyImage[]
+  owner   PropertyOwner?
+  leads   Lead[]
+  saves   SavedProperty[]
+
+  @@index([status])
+  @@index([type])
+  @@index([district])
+  @@index([featured])
+  @@index([status, type])
+  @@index([status, featured, created_at])
+  @@index([views_count])
+  @@index([created_at])
+  @@index([listing_status])
+}
+
+model PropertyImage {
+  id          String   @id @default(cuid())
+  property_id String
+  url         String
+  alt_text    String?
+  sort_order  Int      @default(0)
+  is_primary  Boolean  @default(false)
+  created_at  DateTime @default(now())
+
+  property Property @relation(fields: [property_id], references: [id], onDelete: Cascade)
+
+  @@index([property_id, is_primary])
+}
+
+model PropertyOwner {
+  id            String   @id @default(cuid())
+  property_id   String   @unique
+  name          String?
+  phone         String?  // PRIVATE — visible to admin only, contact through office
+  email         String?  // for approval notifications
+  whatsapp      String?
+  facebook_url  String?
+  instagram_url String?
+  tiktok_url    String?
+  youtube_url   String?
+  twitter_url   String?
+  notes         String?
+  show_contact  Boolean  @default(false)
+  // Link to registered user who submitted this listing
+  user_id       String?  // if the submitter was a logged-in User
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  property Property @relation(fields: [property_id], references: [id], onDelete: Cascade)
+  user     User?    @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+}
+
+model Lead {
+  id           String   @id @default(cuid())
+  property_id  String?
+  user_id      String?
+  name         String
+  phone        String
+  message      String?
+  source       String   @default("WEBSITE")
+  status       String   @default("NEW")
+  admin_notes  String?
+  created_at   DateTime @default(now())
+
+  property Property? @relation(fields: [property_id], references: [id], onDelete: SetNull)
+  user     User?     @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([created_at])
+}
+
+model SearchAlert {
+  id         String   @id @default(cuid())
+  user_id    String?
+  email      String
+  type       String?
+  district   String?
+  min_price  Float?
+  max_price  Float?
+  rooms      Int?
+  is_active  Boolean  @default(true)
+  created_at DateTime @default(now())
+
+  user User? @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([is_active])
+}
+
+model User {
+  id            String   @id @default(cuid())
+  name          String
+  email         String   @unique
+  phone         String?
+  district      String?
+  password_hash String
+  verified      Boolean  @default(false)
+  avatar_url    String?
+  created_at    DateTime @default(now())
+  updated_at    DateTime @updatedAt
+
+  saves              SavedProperty[]
+  leads              Lead[]
+  search_history     SearchHistory[]
+  search_alerts      SearchAlert[]
+  property_requests  PropertyRequest[]
+  submitted_listings PropertyOwner[]
+  notifications      Notification[]
+}
+
+model SavedProperty {
+  id          String   @id @default(cuid())
+  user_id     String
+  property_id String
+  created_at  DateTime @default(now())
+
+  user     User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  property Property @relation(fields: [property_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, property_id])
+  @@index([user_id])
+}
+
+model SearchHistory {
+  id         String   @id @default(cuid())
+  user_id    String
+  query      String
+  filters    String?
+  results    Int      @default(0)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+}
+
+model PropertyRequest {
+  id         String   @id @default(cuid())
+  user_id    String?
+  name       String
+  phone      String
+  email      String?
+  type       String   @default("SALE")
+  district   String?
+  min_price  Float?
+  max_price  Float?
+  rooms      Int?
+  notes      String?
+  status     String   @default("NEW")
+  created_at DateTime @default(now())
+
+  user User? @relation(fields: [user_id], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([created_at])
+}
+
+model AdminUser {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  password_hash String
+  created_at    DateTime @default(now())
+}
+
+model Review {
+  id            String   @id @default(cuid())
+  author_name   String
+  rating        Int      // 1-5
+  content       String
+  deal_type     String?  // "بيع" | "إيجار"
+  district      String?
+  is_approved   Boolean  @default(false)
+  is_featured   Boolean  @default(false)
+  created_at    DateTime @default(now())
+
+  @@index([is_approved])
+  @@index([is_featured])
+  @@index([created_at])
+}
+
+model Notification {
+  id         String   @id @default(cuid())
+  user_id    String
+  type       String   // LISTING_APPROVED | LISTING_REJECTED | GENERAL
+  title      String
+  message    String
+  link       String?
+  is_read    Boolean  @default(false)
+  created_at DateTime @default(now())
+
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id, is_read])
+  @@index([created_at])
+}

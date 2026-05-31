@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(cd \"C:\\\\Users\\\\lenovo\\\\OneDrive\\\\Desktop\\\\كيان\"; $env:DATABASE_URL=\"postgresql://placeholder:placeholder@localhost:5432/placeholder\"; $env:NEXTAUTH_SECRET=\"placeholder-secret-32-chars-minimum\"; npm run build 2>&1 | Select-Object -Last 30)"
+    ]
+  }
+}

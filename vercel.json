@@ -1,0 +1,16 @@
+{
+  "functions": {
+    "api/admin/upload": {
+      "maxDuration": 30,
+      "memory": 512
+    }
+  },
+  "headers": [
+    {
+      "source": "/uploads/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ]
+}
