@@ -15,41 +15,47 @@ const signupSchema = z.object({
 });
 
 export async function POST(req: NextRequest) {
-  const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
-  const { success } = await checkRateLimit(loginLimiter, `signup:${ip}`);
-  if (!success) {
-    return NextResponse.json({ error: 'محاولات كثيرة. حاول بعد قليل.' }, { status: 429 });
+  try {
+    const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
+    const { success } = await checkRateLimit(loginLimiter, `signup:${ip}`);
+    if (!success) {
+      return NextResponse.json({ error: 'محاولات كثيرة. حاول بعد قليل.' }, { status: 429 });
+    }
+
+    let body: unknown;
+    try { body = await req.json(); }
+    catch { return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 }); }
+
+    const result = signupSchema.safeParse(body);
+    if (!result.success) {
+      return NextResponse.json({ error: result.error.issues[0]?.message }, { status: 400 });
+    }
+
+    const { name, email, phone, district, password } = result.data;
+
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return NextResponse.json({ error: 'هذا البريد الإلكتروني مسجل مسبقاً' }, { status: 409 });
+    }
+
+    const password_hash = await hashPassword(password);
+    const user = await prisma.user.create({
+      data: { name, email, phone, district: district || null, password_hash },
+    });
+
+    await createUserSession(user.id, user.email, user.name);
+
+    // Fire-and-forget emails
+    sendWelcomeEmail(user.name, user.email).catch(() => {});
+    sendNewUserNotification({ id: user.id, name: user.name, email: user.email, phone: user.phone, district: user.district }).catch(() => {});
+
+    return NextResponse.json(
+      { success: true, user: { id: user.id, name: user.name, email: user.email } },
+      { status: 201 }
+    );
+  } catch (err) {
+    console.error('[signup]', err);
+    const message = err instanceof Error ? err.message : 'حدث خطأ';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
-
-  let body: unknown;
-  try { body = await req.json(); }
-  catch { return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 }); }
-
-  const result = signupSchema.safeParse(body);
-  if (!result.success) {
-    return NextResponse.json({ error: result.error.issues[0]?.message }, { status: 400 });
-  }
-
-  const { name, email, phone, district, password } = result.data;
-
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return NextResponse.json({ error: 'هذا البريد الإلكتروني مسجل مسبقاً' }, { status: 409 });
-  }
-
-  const password_hash = await hashPassword(password);
-  const user = await prisma.user.create({
-    data: { name, email, phone, district: district || null, password_hash },
-  });
-
-  await createUserSession(user.id, user.email, user.name);
-
-  // Fire-and-forget emails
-  sendWelcomeEmail(user.name, user.email).catch(() => {});
-  sendNewUserNotification({ id: user.id, name: user.name, email: user.email, phone: user.phone, district: user.district }).catch(() => {});
-
-  return NextResponse.json(
-    { success: true, user: { id: user.id, name: user.name, email: user.email } },
-    { status: 201 }
-  );
 }
