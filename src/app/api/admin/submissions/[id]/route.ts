@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { verifySession } from '@/lib/auth';
 import { z } from 'zod';
@@ -119,6 +120,12 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       }).catch(() => {});
     }
   }
+
+  // Refresh the public listings immediately so an approved/rejected property
+  // appears/disappears without waiting out the read cache window.
+  revalidatePath('/');
+  revalidatePath('/properties');
+  revalidatePath(`/properties/${property.slug}`);
 
   return NextResponse.json({ success: true, listing_status: updated.listing_status });
 }

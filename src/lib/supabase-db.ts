@@ -21,9 +21,11 @@ function sb(): any {
     _supabase = createClient(url, key, {
       auth: { persistSession: false },
       global: {
-        // Disable Next.js fetch caching so server components always get fresh data
+        // Next.js only caches GET requests, so reads get a short revalidation
+        // window (fast pages, far fewer Supabase round-trips) while writes
+        // (POST/PATCH/DELETE) are never cached and always hit the DB live.
         fetch: (input: RequestInfo | URL, init?: RequestInit) =>
-          fetch(input, { ...init, cache: 'no-store' }),
+          fetch(input, { ...init, next: { revalidate: 30 } }),
       },
     });
   }
