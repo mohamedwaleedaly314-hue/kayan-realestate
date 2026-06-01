@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { prisma } from '@/lib/prisma';
 import { verifySession } from '@/lib/auth';
 import { propertySchema, ownerSchema } from '@/lib/validations';
@@ -93,6 +94,11 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     include: { images: true, owner: true },
   });
 
+  revalidatePath('/admin/properties');
+  revalidatePath('/');
+  revalidatePath('/properties');
+  if (property.slug) revalidatePath(`/properties/${property.slug}`);
+
   return NextResponse.json(property);
 }
 
@@ -100,10 +106,32 @@ export async function DELETE(_req: NextRequest, { params }: Params) {
   const session = await verifySession();
   if (!session) return NextResponse.json({ error: 'غير مصرح' }, { status: 401 });
 
-  const existing = await prisma.property.findUnique({ where: { id: params.id } });
+  const existing = await prisma.property.findUnique({
+    where: { id: params.id },
+    select: { id: true, slug: true },
+  });
   if (!existing) return NextResponse.json({ error: 'العقار غير موجود' }, { status: 404 });
 
-  await prisma.property.delete({ where: { id: params.id } });
+  try {
+    // Remove related rows first so a foreign-key constraint can never block
+    // the delete (regardless of how cascade is configured in the DB).
+    await prisma.propertyImage.deleteMany({ where: { property_id: params.id } });
+    await prisma.savedProperty.deleteMany({ where: { property_id: params.id } });
+    await prisma.propertyOwner.deleteMany({ where: { property_id: params.id } });
+    // Keep leads for the record, just detach them from the deleted property.
+    await prisma.lead.updateMany({ where: { property_id: params.id }, data: { property_id: null } });
+
+    await prisma.property.delete({ where: { id: params.id } });
+  } catch (err) {
+    console.error('[admin/properties][DELETE]', err);
+    return NextResponse.json({ error: 'تعذّر حذف العقار' }, { status: 500 });
+  }
+
+  // Update the cached lists immediately so the property disappears at once.
+  revalidatePath('/admin/properties');
+  revalidatePath('/');
+  revalidatePath('/properties');
+  revalidatePath(`/properties/${existing.slug}`);
 
   return NextResponse.json({ success: true });
 }
