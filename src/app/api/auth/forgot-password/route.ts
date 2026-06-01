@@ -5,10 +5,18 @@ import { checkRateLimit, loginLimiter } from '@/lib/rate-limit';
 import { z } from 'zod';
 
 const schema = z.object({
-  email: z.string().email('البريد الإلكتروني غير صحيح'),
+  phone: z.string().regex(/^[0-9+]{10,15}$/, 'رقم الهاتف غير صحيح'),
 });
 
 const BASE_URL = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+
+// Best-effort conversion of a local Egyptian number to international WhatsApp format.
+function toWhatsAppNumber(phone: string): string {
+  const digits = phone.replace(/\D/g, '');
+  if (digits.startsWith('20')) return digits;
+  if (digits.startsWith('0')) return `20${digits.slice(1)}`;
+  return digits;
+}
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for') ?? 'unknown';
@@ -26,32 +34,48 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error.issues[0]?.message }, { status: 400 });
   }
 
-  const email = result.data.email.trim().toLowerCase();
+  const { phone } = result.data;
 
-  // Always respond the same way — never reveal whether an email is registered.
+  // Always respond the same way — never reveal whether a phone is registered.
   const genericOk = NextResponse.json({
     success: true,
-    message: 'لو الإيميل مسجّل عندنا، هتلاقي رابط إعادة التعيين وصلك على بريدك.',
+    message: 'لو الرقم مسجّل عندنا، هنبعتلك رابط إعادة التعيين على واتساب.',
   });
 
-  // Ignore the synthetic placeholder addresses we store for phone-only accounts.
-  if (email.endsWith('@phone.kayan')) return genericOk;
-
   const user = await prisma.user.findFirst({
-    where: { email },
-    select: { id: true, name: true, email: true, password_hash: true },
+    where: { phone },
+    select: { id: true, name: true, email: true, phone: true, password_hash: true },
   });
   if (!user) return genericOk;
 
   const token = await createResetToken(user.id, user.password_hash);
   const resetUrl = `${BASE_URL}/auth/reset?token=${encodeURIComponent(token)}`;
 
-  // Email is the delivery channel (Resend — free, no extra setup needed).
+  // Primary self-service channel: WhatsApp to the account phone (free, no domain
+  // needed). Works automatically once WhatsApp Cloud API is configured; until
+  // then the office can send the link from the admin users page.
   try {
-    const { sendPasswordResetEmail } = await import('@/lib/email');
-    await sendPasswordResetEmail(user.email, user.name, resetUrl);
+    const { sendWhatsApp } = await import('@/lib/whatsapp');
+    const msg = [
+      `🔐 *إعادة تعيين كلمة المرور — كيان للعقارات*`,
+      ``,
+      `مرحباً ${user.name ?? ''}،`,
+      `اضغط الرابط لتعيين كلمة مرور جديدة (صالح 30 دقيقة):`,
+      resetUrl,
+      ``,
+      `لو مش انت اللي طلبت، تجاهل الرسالة.`,
+    ].join('\n');
+    await sendWhatsApp(toWhatsAppNumber(user.phone ?? phone), msg);
   } catch (err) {
-    console.error('[forgot-password][email]', err);
+    console.error('[forgot-password][whatsapp]', err);
+  }
+
+  // Bonus channel: email, only when the user added a real one.
+  const realEmail = user.email && !user.email.endsWith('@phone.kayan') ? user.email : null;
+  if (realEmail) {
+    import('@/lib/email')
+      .then(({ sendPasswordResetEmail }) => sendPasswordResetEmail(realEmail, user.name, resetUrl))
+      .catch((err) => console.error('[forgot-password][email]', err));
   }
 
   return genericOk;
