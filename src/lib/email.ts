@@ -58,6 +58,27 @@ const row = (label: string, value: string) =>
   </tr>`;
 
 /* ═══════════════════════════════════════════════════════════════════
+   0. PASSWORD RESET — إعادة تعيين كلمة المرور
+   ═══════════════════════════════════════════════════════════════════ */
+export async function sendPasswordResetEmail(toEmail: string, name: string | null, resetUrl: string) {
+  const html = wrap(`
+    <div style="background:#fff;border-radius:12px;padding:24px 28px;">
+      <h2 style="color:#1A2B4A;margin:0 0 12px;font-size:18px;">إعادة تعيين كلمة المرور</h2>
+      <p style="color:#444;font-size:14px;line-height:1.9;margin:0;">
+        مرحباً ${name ?? ''}،<br>
+        وصلنا طلب لإعادة تعيين كلمة المرور الخاصة بحسابك في كيان للعقارات.
+        اضغط الزر بالأسفل لتعيين كلمة مرور جديدة. الرابط صالح لمدة 30 دقيقة فقط.
+      </p>
+      ${btn('تعيين كلمة مرور جديدة', resetUrl)}
+      <p style="color:#888;font-size:12px;line-height:1.8;margin:18px 0 0;">
+        إذا لم تطلب هذا، تجاهل هذه الرسالة وكلمة مرورك ستبقى كما هي.
+      </p>
+    </div>
+  `);
+  await sendEmail(toEmail, 'إعادة تعيين كلمة المرور — كيان للعقارات', html);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
    1. NEW LEAD — استفسار عقار جديد
    ═══════════════════════════════════════════════════════════════════ */
 export interface LeadEmailData {

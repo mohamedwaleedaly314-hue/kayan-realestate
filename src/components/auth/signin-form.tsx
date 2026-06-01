@@ -94,6 +94,9 @@ export default function SignInForm() {
                 </button>
               </div>
               {errors.password && <p className="text-destructive text-xs mt-1">{errors.password}</p>}
+              <div className="text-left mt-1.5">
+                <Link href="/auth/forgot" className="text-xs text-gold hover:underline">نسيت كلمة المرور؟</Link>
+              </div>
             </div>
 
             <Button type="submit" variant="gold" size="lg" className="w-full mt-2" disabled={loading}>
