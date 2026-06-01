@@ -65,6 +65,11 @@ export default function ForgotPasswordPage() {
                 لو إيميلك مسجّل عندنا، هتلاقي رابط إعادة تعيين كلمة المرور وصلك على بريدك.
                 الرابط صالح لمدة 30 دقيقة. (راجع صندوق الـ Spam لو ما لقيتهوش)
               </p>
+              <p className="text-muted-foreground text-xs leading-relaxed mt-3">
+                سجّلت برقم موبايل من غير إيميل؟{' '}
+                <Link href="/contact" className="text-gold hover:underline">تواصل مع المكتب</Link>
+                {' '}وهنساعدك تستعيد حسابك.
+              </p>
               <Button variant="outline" size="lg" className="w-full mt-6" asChild>
                 <Link href="/auth/signin">العودة لتسجيل الدخول</Link>
               </Button>

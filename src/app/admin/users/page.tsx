@@ -3,6 +3,7 @@ export const dynamic = 'force-dynamic';
 import { prisma } from '@/lib/prisma';
 import { formatDate } from '@/lib/utils';
 import { Users, Heart, MessageSquare, Phone, Mail } from 'lucide-react';
+import UserResetButton from '@/components/admin/user-reset-button';
 
 export default async function AdminUsersPage() {
   const users = await prisma.user.findMany({
@@ -54,11 +55,12 @@ export default async function AdminUsersPage() {
                 <th className="text-right px-4 py-3 font-semibold">المحفوظات</th>
                 <th className="text-right px-4 py-3 font-semibold">الاستفسارات</th>
                 <th className="text-right px-4 py-3 font-semibold">تاريخ التسجيل</th>
+                <th className="text-right px-4 py-3 font-semibold">إجراءات</th>
               </tr>
             </thead>
             <tbody>
               {users.length === 0 && (
-                <tr><td colSpan={6} className="text-center py-12 text-muted-foreground">لا يوجد مستخدمون مسجّلون بعد</td></tr>
+                <tr><td colSpan={7} className="text-center py-12 text-muted-foreground">لا يوجد مستخدمون مسجّلون بعد</td></tr>
               )}
               {users.map((u) => (
                 <tr key={u.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
@@ -88,6 +90,9 @@ export default async function AdminUsersPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3 text-muted-foreground">{formatDate(u.created_at)}</td>
+                  <td className="px-4 py-3">
+                    <UserResetButton userId={u.id} name={u.name} phone={u.phone} />
+                  </td>
                 </tr>
               ))}
             </tbody>
