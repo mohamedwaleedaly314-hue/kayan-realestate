@@ -8,7 +8,7 @@ export const propertySchema = z.object({
     .max(100)
     .regex(/^[a-z0-9-]+$/, 'الـ slug يجب أن يحتوي على أحرف إنجليزية صغيرة وأرقام وشرطة فقط'),
   description_ar: z.string().max(5000).optional().nullable(),
-  price: z.number().positive('السعر يجب أن يكون رقم موجب').max(999_999_999),
+  price: z.number().positive('السعر يجب أن يكون رقم موجب').max(99_999_999_999, 'السعر غير صحيح'),
   area_m2: z.number().positive('المساحة يجب أن تكون رقم موجب'),
   rooms: z.number().int().min(0).max(20).optional().nullable(),
   floor: z.number().int().min(0).max(100).optional().nullable(),
