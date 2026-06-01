@@ -23,6 +23,30 @@ function sb(): any {
   return _supabase;
 }
 
+// ─── Date field conversion ───────────────────────────────────────────────────
+// Prisma returns Date objects; the REST API returns ISO strings.
+// We convert known date fields back to Date objects so all existing code works.
+
+const DATE_FIELDS = new Set(['created_at', 'updated_at', 'free_listing_until']);
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function convertDates(obj: any): any {
+  if (obj === null || obj === undefined || typeof obj !== 'object') return obj;
+  if (obj instanceof Date) return obj;
+  if (Array.isArray(obj)) return obj.map(convertDates);
+  const out: Record<string, unknown> = {};
+  for (const [k, v] of Object.entries(obj as Record<string, unknown>)) {
+    if (DATE_FIELDS.has(k) && typeof v === 'string' && v) {
+      out[k] = new Date(v);
+    } else if (v !== null && typeof v === 'object') {
+      out[k] = convertDates(v);
+    } else {
+      out[k] = v;
+    }
+  }
+  return out;
+}
+
 // ─── Relation map: relation field name → child table name ───────────────────
 
 const MODEL_RELATIONS: Record<string, Record<string, string>> = {
@@ -60,8 +84,44 @@ const CHILD_FK: Record<string, Record<string, string>> = {
 // ─── Build PostgREST select string ──────────────────────────────────────────
 
 /**
- * Recursively build a PostgREST select string for nested relation fields.
- * Handles unlimited depth: Property → PropertyOwner, Lead → Property → PropertyOwner, etc.
+ * Recursively expand a Prisma include/select config into a PostgREST select string.
+ * Handles unlimited depth:
+ *   select: { owner: { select: { name } } }
+ *   include: { property: { include: { images: { where: ... } } } }
+ *   include: { property: { select: { title_ar, owner: { select: { name } } } } }
+ */
+function expandRelationConfig(
+  tableName: string,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  cfg: any,
+): string {
+  if (!cfg || cfg === true) return '*';
+  const relations = MODEL_RELATIONS[tableName] ?? {};
+
+  // cfg has a "select" key → use those fields (with possible nested relations)
+  if (cfg.select) {
+    return buildNestedSelectStr(tableName, cfg.select as Record<string, unknown>);
+  }
+
+  // cfg has an "include" key → expand each included relation
+  if (cfg.include) {
+    const parts = ['*'];
+    for (const [rel, relCfg] of Object.entries(cfg.include as Record<string, unknown>)) {
+      if (!relCfg || rel === '_count') continue;
+      const childTable = relations[rel];
+      if (!childTable) continue;
+      const nested = expandRelationConfig(childTable, relCfg);
+      parts.push(`${rel}:${childTable}(${nested})`);
+    }
+    return parts.join(', ');
+  }
+
+  return '*';
+}
+
+/**
+ * Recursively build a PostgREST select string from a Prisma "select" object.
+ * Handles scalar fields and nested relation selects/includes at any depth.
  */
 function buildNestedSelectStr(
   tableName: string,
@@ -74,15 +134,8 @@ function buildNestedSelectStr(
     if (!v || k === '_count') continue;
     if (k in relations && typeof v === 'object' && v !== null) {
       const childTable = relations[k];
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const cfg = v as any;
-      if (cfg.select) {
-        // Recurse into nested select
-        const nested = buildNestedSelectStr(childTable, cfg.select as Record<string, unknown>);
-        cols.push(`${k}:${childTable}(${nested || '*'})`);
-      } else {
-        cols.push(`${k}:${childTable}(*)`);
-      }
+      const nested = expandRelationConfig(childTable, v);
+      cols.push(`${k}:${childTable}(${nested})`);
     } else {
       cols.push(k);
     }
@@ -107,7 +160,8 @@ function buildSelectStr(
         if (!cfg || rel === '_count') continue;
         const tbl = relations[rel];
         if (tbl && !selectStr.includes(`${rel}:`)) {
-          extraParts.push(`${rel}:${tbl}(*)`);
+          const nested = expandRelationConfig(tbl, cfg);
+          extraParts.push(`${rel}:${tbl}(${nested})`);
         }
       }
       if (extraParts.length) {
@@ -123,15 +177,8 @@ function buildSelectStr(
     if (!cfg || rel === '_count') continue;
     const tbl = relations[rel];
     if (!tbl) continue;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const c = cfg as any;
-    if (typeof c === 'object' && c.select) {
-      // Use recursive builder for nested selects inside include
-      const nested = buildNestedSelectStr(tbl, c.select as Record<string, unknown>);
-      parts.push(`${rel}:${tbl}(${nested || '*'})`);
-    } else {
-      parts.push(`${rel}:${tbl}(*)`);
-    }
+    const nested = expandRelationConfig(tbl, cfg);
+    parts.push(`${rel}:${tbl}(${nested})`);
   }
   return parts.join(', ');
 }
@@ -294,9 +341,7 @@ function applyWhere(q: any, where: Record<string, unknown>): any {
     if (value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
       const sub = value as Record<string, unknown>;
       const subKeys = Object.keys(sub);
-      // Heuristic: compound key if sub-values are all primitives and key has multiple underscores
       if (subKeys.length >= 2 && subKeys.every(k => sub[k] === null || typeof sub[k] !== 'object')) {
-        // Check if this is actually a compound unique name (not an operator object)
         const isOperator = ['contains','gte','lte','gt','lt','in','not','equals','startsWith','endsWith'].some(op => op in sub);
         if (!isOperator) {
           for (const [sf, sv] of Object.entries(sub)) {
@@ -327,12 +372,47 @@ function applyWhere(q: any, where: Record<string, unknown>): any {
         if (op.equals === null) q = q.is(key, null);
         else q = q.eq(key, op.equals);
       }
+      // else: unknown object — skip silently (e.g. relation filter pre-resolved)
     } else {
       if (value === null || value === undefined) q = q.is(key, null);
       else q = q.eq(key, value);
     }
   }
   return q;
+}
+
+/**
+ * Pre-process a Prisma where clause to resolve any relation-based filters
+ * (e.g. { owner: { user_id: X } }) into id-list filters using a sub-query.
+ * Returns a flat where object that applyWhere can handle.
+ */
+async function resolveRelationFilters(
+  tableName: string,
+  where: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+  const relations = MODEL_RELATIONS[tableName] ?? {};
+  const relFk = RELATION_FK[tableName] ?? {};
+  const resolved: Record<string, unknown> = {};
+
+  for (const [key, value] of Object.entries(where)) {
+    // Is this key a relation name with a filter object?
+    if (key in relations && value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      const relTable = relations[key];
+      const fkField = relFk[key]; // FK in relTable pointing back to this table
+      if (fkField) {
+        // Sub-query: get parent IDs by querying the related table
+        const { data } = await applyWhere(
+          sb().from(relTable).select(fkField),
+          value as Record<string, unknown>,
+        );
+        const ids = (data ?? []).map((r: Record<string, unknown>) => r[fkField]).filter(Boolean);
+        resolved['id'] = { in: ids.length > 0 ? ids : ['__no_match__'] };
+        continue;
+      }
+    }
+    resolved[key] = value;
+  }
+  return resolved;
 }
 
 // ─── Apply ORDER BY ──────────────────────────────────────────────────────────
@@ -359,30 +439,49 @@ function postProcessInclude(
     const out = { ...item };
     for (const [rel, cfg] of Object.entries(include)) {
       if (rel === '_count' || !cfg) continue;
-      if (!Array.isArray(out[rel])) continue;
       if (cfg === true) continue;
-
-      let arr = out[rel] as Record<string, unknown>[];
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const c = cfg as any;
-      if (c.where) arr = arr.filter(r => matchWhere(r, c.where));
-      if (c.orderBy) {
-        const orders = Array.isArray(c.orderBy) ? c.orderBy : [c.orderBy];
-        arr = [...arr].sort((a, b) => {
-          for (const o of orders as Record<string, string>[]) {
-            for (const [col, dir] of Object.entries(o)) {
-              const av = a[col] ?? '';
-              const bv = b[col] ?? '';
-              const cmp = av === bv ? 0 : av < bv ? -1 : 1;
-              if (cmp !== 0) return dir === 'desc' ? -cmp : cmp;
+
+      // ── Array relation (one-to-many) ──
+      if (Array.isArray(out[rel])) {
+        let arr = out[rel] as Record<string, unknown>[];
+        const innerInclude = c.include ?? c.select;
+        if (c.where) arr = arr.filter(r => matchWhere(r, c.where));
+        if (c.orderBy) {
+          const orders = Array.isArray(c.orderBy) ? c.orderBy : [c.orderBy];
+          arr = [...arr].sort((a, b) => {
+            for (const o of orders as Record<string, string>[]) {
+              for (const [col, dir] of Object.entries(o)) {
+                const av = a[col] ?? '';
+                const bv = b[col] ?? '';
+                const cmp = av === bv ? 0 : av < bv ? -1 : 1;
+                if (cmp !== 0) return dir === 'desc' ? -cmp : cmp;
+              }
             }
-          }
-          return 0;
-        });
+            return 0;
+          });
+        }
+        if (typeof c.skip === 'number') arr = arr.slice(c.skip);
+        if (typeof c.take === 'number') arr = arr.slice(0, c.take);
+        // Recurse into nested include/select on array items
+        if (innerInclude && typeof innerInclude === 'object') {
+          arr = postProcessInclude(arr, innerInclude as Record<string, unknown>);
+        }
+        out[rel] = arr;
+        continue;
       }
-      if (typeof c.skip === 'number') arr = arr.slice(c.skip);
-      if (typeof c.take === 'number') arr = arr.slice(0, c.take);
-      out[rel] = arr;
+
+      // ── Object relation (one-to-one / many-to-one) ──
+      if (out[rel] !== null && out[rel] !== undefined && typeof out[rel] === 'object') {
+        const innerInclude = c.include ?? c.select;
+        if (innerInclude && typeof innerInclude === 'object') {
+          out[rel] = postProcessInclude(
+            [out[rel] as Record<string, unknown>],
+            innerInclude as Record<string, unknown>,
+          )[0];
+        }
+      }
     }
     return out;
   });
@@ -504,10 +603,11 @@ function createModel(tableName: string): any {
       const { where = {}, select, include } = args;
       const countCfg = getCountConfig(select, include);
       const selectStr = buildSelectStr(tableName, include, select);
-      const { data, error } = await applyWhere(sb().from(tableName).select(selectStr), where).maybeSingle();
+      const resolvedWhere = await resolveRelationFilters(tableName, where);
+      const { data, error } = await applyWhere(sb().from(tableName).select(selectStr), resolvedWhere).maybeSingle();
       if (error && error.code !== 'PGRST116') throwIfErr(error);
       if (!data) return null;
-      let result = [data as Record<string, unknown>];
+      let result = [convertDates(data) as Record<string, unknown>];
       if (include) result = postProcessInclude(result, include);
       if (countCfg) result = await applyCountInclude(tableName, result, countCfg);
       return result[0] ?? null;
@@ -523,14 +623,15 @@ function createModel(tableName: string): any {
       const { where = {}, select, include, orderBy, skip } = args;
       const countCfg = getCountConfig(select, include);
       const selectStr = buildSelectStr(tableName, include, select);
-      let q = applyWhere(sb().from(tableName).select(selectStr), where);
+      const resolvedWhere = await resolveRelationFilters(tableName, where);
+      let q = applyWhere(sb().from(tableName).select(selectStr), resolvedWhere);
       q = applyOrderBy(q, orderBy);
       if (typeof skip === 'number') q = q.range(skip, skip);
       q = q.limit(1);
       const { data, error } = await q;
       throwIfErr(error);
       if (!data || data.length === 0) return null;
-      let result = data as Record<string, unknown>[];
+      let result = (data as Record<string, unknown>[]).map(convertDates);
       if (include) result = postProcessInclude(result, include);
       if (countCfg) result = await applyCountInclude(tableName, result, countCfg);
       return result[0] ?? null;
@@ -548,7 +649,8 @@ function createModel(tableName: string): any {
       const { where = {}, select, include, orderBy, take, skip } = args;
       const countCfg = getCountConfig(select, include);
       const selectStr = buildSelectStr(tableName, include, select);
-      let q = applyWhere(sb().from(tableName).select(selectStr), where);
+      const resolvedWhere = await resolveRelationFilters(tableName, where);
+      let q = applyWhere(sb().from(tableName).select(selectStr), resolvedWhere);
       q = applyOrderBy(q, orderBy);
       if (typeof skip === 'number' && typeof take === 'number') {
         q = q.range(skip, skip + take - 1);
@@ -559,7 +661,7 @@ function createModel(tableName: string): any {
       }
       const { data, error } = await q;
       throwIfErr(error);
-      let result = (data ?? []) as Record<string, unknown>[];
+      let result = ((data ?? []) as Record<string, unknown>[]).map(convertDates);
       if (include) result = postProcessInclude(result, include);
       if (countCfg) result = await applyCountInclude(tableName, result, countCfg);
       return result;
@@ -583,7 +685,7 @@ function createModel(tableName: string): any {
         .select('*')
         .single();
       throwIfErr(error);
-      const mainRecord = result as Record<string, unknown>;
+      const mainRecord = convertDates(result) as Record<string, unknown>;
 
       // Execute nested operations (create images, owner, etc.)
       if (Object.keys(nestedOps).length > 0) {
@@ -630,11 +732,11 @@ function createModel(tableName: string): any {
           where,
         ).select('*').single();
         throwIfErr(error);
-        mainRecord = result as Record<string, unknown>;
+        mainRecord = convertDates(result) as Record<string, unknown>;
       } else {
         // Nothing to update in main table — just fetch it
         const { data: result } = await applyWhere(sb().from(tableName).select('*'), where).single();
-        mainRecord = (result as Record<string, unknown>) ?? {};
+        mainRecord = convertDates(result) as Record<string, unknown> ?? {};
       }
 
       // Execute nested relation operations
@@ -680,7 +782,7 @@ function createModel(tableName: string): any {
       const { where } = args;
       const { data, error } = await applyWhere(sb().from(tableName).delete(), where).select('*').single();
       throwIfErr(error);
-      return data as Record<string, unknown>;
+      return convertDates(data) as Record<string, unknown>;
     },
 
     async deleteMany(args: { where?: Record<string, unknown> } = {}) {
