@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import { Cairo, Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from 'react-hot-toast';
+import { Analytics } from '@vercel/analytics/react';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import WhatsAppButton from '@/components/ui/whatsapp-button';
 
 const cairo = Cairo({
@@ -66,6 +68,8 @@ export default function RootLayout({
       <body className={`${cairo.variable} ${inter.variable} font-cairo`}>
         {children}
         <WhatsAppButton />
+        <Analytics />
+        <SpeedInsights />
         <Toaster
           position="top-center"
           toastOptions={{

@@ -6,7 +6,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import {
   Menu, X, Building2, Moon, Sun,
   User, Heart, LogOut, ChevronDown,
-  Home, Grid3X3, Info, Phone,
+  Home, Grid3X3, Info, Phone, Calculator,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ import NotificationBell from '@/components/layout/NotificationBell';
 const navLinks = [
   { href: '/',           label: 'الرئيسية',  icon: Home },
   { href: '/properties', label: 'العقارات',   icon: Grid3X3 },
+  { href: '/calculator', label: 'حاسبة التقسيط', icon: Calculator },
   { href: '/request',    label: 'طلب عقار',   icon: Phone },
   { href: '/about',      label: 'من نحن',     icon: Info },
   { href: '/contact',    label: 'تواصل معنا', icon: Phone },
