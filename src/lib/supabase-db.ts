@@ -301,11 +301,11 @@ function buildOrStr(conditions: any[]): string {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const o = v as any;
             if ('contains' in o) return `${f}.ilike.*${o.contains}*`;
-            if ('gte' in o)      return `${f}.gte.${o.gte}`;
-            if ('lte' in o)      return `${f}.lte.${o.lte}`;
-            if ('gt' in o)       return `${f}.gt.${o.gt}`;
-            if ('lt' in o)       return `${f}.lt.${o.lt}`;
-            if ('not' in o)      return o.not === null ? `${f}.not.is.null` : `${f}.neq.${o.not}`;
+            if ('gte' in o)      return `${f}.gte.${toDbVal(o.gte)}`;
+            if ('lte' in o)      return `${f}.lte.${toDbVal(o.lte)}`;
+            if ('gt' in o)       return `${f}.gt.${toDbVal(o.gt)}`;
+            if ('lt' in o)       return `${f}.lt.${toDbVal(o.lt)}`;
+            if ('not' in o)      return o.not === null ? `${f}.not.is.null` : `${f}.neq.${toDbVal(o.not)}`;
           }
           if (v === null) return `${f}.is.null`;
           return `${f}.eq.${v}`;
@@ -313,6 +313,13 @@ function buildOrStr(conditions: any[]): string {
         .join(','),
     )
     .join(',');
+}
+
+/** Ensure Date objects are sent as ISO UTC strings that PostgreSQL understands */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function toDbVal(v: any): any {
+  if (v instanceof Date) return v.toISOString();
+  return v;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -337,6 +344,12 @@ function applyWhere(q: any, where: Record<string, unknown>): any {
       continue;
     }
 
+    // Date object at top level → convert to ISO string
+    if (value instanceof Date) {
+      q = q.eq(key, value.toISOString());
+      continue;
+    }
+
     // Compound unique key: e.g. user_id_property_id: { user_id, property_id }
     if (value !== null && value !== undefined && typeof value === 'object' && !Array.isArray(value)) {
       const sub = value as Record<string, unknown>;
@@ -346,7 +359,7 @@ function applyWhere(q: any, where: Record<string, unknown>): any {
         if (!isOperator) {
           for (const [sf, sv] of Object.entries(sub)) {
             if (sv === null || sv === undefined) q = q.is(sf, null);
-            else q = q.eq(sf, sv);
+            else q = q.eq(sf, toDbVal(sv));
           }
           continue;
         }
@@ -360,22 +373,22 @@ function applyWhere(q: any, where: Record<string, unknown>): any {
       if ('contains' in op)        q = q.ilike(key, `%${op.contains}%`);
       else if ('startsWith' in op) q = q.ilike(key, `${op.startsWith}%`);
       else if ('endsWith' in op)   q = q.ilike(key, `%${op.endsWith}`);
-      else if ('gte' in op)        q = q.gte(key, op.gte);
-      else if ('lte' in op)        q = q.lte(key, op.lte);
-      else if ('gt' in op)         q = q.gt(key, op.gt);
-      else if ('lt' in op)         q = q.lt(key, op.lt);
-      else if ('in' in op)         q = q.in(key, op.in);
+      else if ('gte' in op)        q = q.gte(key, toDbVal(op.gte));
+      else if ('lte' in op)        q = q.lte(key, toDbVal(op.lte));
+      else if ('gt' in op)         q = q.gt(key, toDbVal(op.gt));
+      else if ('lt' in op)         q = q.lt(key, toDbVal(op.lt));
+      else if ('in' in op)         q = q.in(key, (op.in as unknown[]).map(toDbVal));
       else if ('not' in op) {
         if (op.not === null) q = q.not(key, 'is', null);
-        else q = q.neq(key, op.not);
+        else q = q.neq(key, toDbVal(op.not));
       } else if ('equals' in op) {
         if (op.equals === null) q = q.is(key, null);
-        else q = q.eq(key, op.equals);
+        else q = q.eq(key, toDbVal(op.equals));
       }
       // else: unknown object — skip silently (e.g. relation filter pre-resolved)
     } else {
       if (value === null || value === undefined) q = q.is(key, null);
-      else q = q.eq(key, value);
+      else q = q.eq(key, toDbVal(value));
     }
   }
   return q;
@@ -530,7 +543,14 @@ async function applyCountInclude(
   if (ids.length === 0) return records;
 
   const counts: Record<string, Record<string, number>> = {};
-  for (const id of ids) counts[id] = {};
+  // Pre-initialise every relation count to 0 for every record
+  // so missing rows don't produce undefined → NaN
+  for (const id of ids) {
+    counts[id] = {};
+    for (const [rel, enabled] of Object.entries(countSelect)) {
+      if (enabled) counts[id][rel] = 0;
+    }
+  }
 
   for (const [rel, enabled] of Object.entries(countSelect)) {
     if (!enabled) continue;
@@ -587,7 +607,12 @@ async function resolveData(
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function throwIfErr(error: any) {
-  if (error) throw new Error(error.message ?? String(error));
+  // Ignore null/undefined and errors with no message (aborted/cancelled requests)
+  if (!error) return;
+  const msg: string = error.message ?? '';
+  if (!msg) return;                       // empty-message pseudo-error — not real
+  console.error('[supabase-db] Error:', JSON.stringify(error));
+  throw new Error(msg);
 }
 
 // ─── Model factory ───────────────────────────────────────────────────────────
