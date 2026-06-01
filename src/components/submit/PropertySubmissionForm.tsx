@@ -284,7 +284,7 @@ export default function PropertySubmissionForm() {
                 <Layers className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input type="number" placeholder="0 = أرضي" value={form.floor}
                   onChange={e => set('floor', e.target.value)}
-                  className={cn(inputCls, 'pr-9')} min="0" max="100" />
+                  className={cn(inputCls, 'pr-9')} min="0" max="200" />
               </div>
             </div>
             <div>
@@ -293,7 +293,7 @@ export default function PropertySubmissionForm() {
                 <BedDouble className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <input type="number" placeholder="عدد الغرف" value={form.rooms}
                   onChange={e => set('rooms', e.target.value)}
-                  className={cn(inputCls, 'pr-9')} min="0" max="20" />
+                  className={cn(inputCls, 'pr-9')} min="0" max="50" />
               </div>
             </div>
           </div>

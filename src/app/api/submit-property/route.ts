@@ -7,13 +7,13 @@ import { verifyUserSession } from '@/lib/user-auth';
 const submissionSchema = z.object({
   // Property basics
   type:          z.enum(['SALE', 'RENT']),
-  district:      z.string().min(2).max(100),
-  title_ar:      z.string().min(3).max(200),
-  description_ar: z.string().max(3000).optional().nullable(),
-  price:         z.number().positive('السعر يجب أن يكون رقم موجب').max(99_999_999_999, 'السعر غير صحيح'),
-  area_m2:       z.number().positive('المساحة يجب أن تكون رقم موجب').max(1_000_000, 'المساحة غير صحيحة'),
-  rooms:         z.number().int().min(0).max(20).optional().nullable(),
-  floor:         z.number().int().min(0).max(100).optional().nullable(),
+  district:      z.string().min(2, 'اختر المنطقة').max(100),
+  title_ar:      z.string().min(3, 'العنوان يجب أن يكون 3 أحرف على الأقل').max(200, 'العنوان طويل جداً'),
+  description_ar: z.string().max(3000, 'الوصف طويل جداً').optional().nullable(),
+  price:         z.number({ invalid_type_error: 'أدخل السعر' }).positive('السعر يجب أن يكون رقم موجب').max(99_999_999_999, 'السعر غير صحيح'),
+  area_m2:       z.number({ invalid_type_error: 'أدخل المساحة' }).positive('المساحة يجب أن تكون رقم موجب').max(1_000_000, 'المساحة غير صحيحة'),
+  rooms:         z.number().int('عدد الغرف غير صحيح').min(0, 'عدد الغرف غير صحيح').max(50, 'عدد الغرف غير صحيح').optional().nullable(),
+  floor:         z.number().int('رقم الطابق غير صحيح').min(0, 'رقم الطابق غير صحيح').max(200, 'رقم الطابق غير صحيح').optional().nullable(),
   has_elevator:  z.boolean().default(false),
   // Viewing schedule
   viewing_days:      z.array(z.string()).max(7).optional(),
@@ -22,8 +22,8 @@ const submissionSchema = z.object({
   // Owner info (phone is private)
   owner_name:    z.string().max(100).optional().nullable(),
   owner_phone:   z.string().regex(/^[0-9+]{7,15}$/, 'رقم الهاتف غير صحيح').optional().nullable(),
-  owner_whatsapp: z.string().regex(/^[0-9+]{7,15}$/).optional().or(z.literal('')).or(z.null()),
-  owner_email:   z.string().email().optional().or(z.literal('')).or(z.null()),
+  owner_whatsapp: z.string().regex(/^[0-9+]{7,15}$/, 'رقم واتساب غير صحيح').optional().or(z.literal('')).or(z.null()),
+  owner_email:   z.string().email('البريد الإلكتروني غير صحيح').optional().or(z.literal('')).or(z.null()),
   // Images
   image_urls:    z.array(z.string().min(1)).max(8).optional(),
 });
