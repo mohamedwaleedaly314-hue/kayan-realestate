@@ -26,13 +26,24 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error.errors[0]?.message ?? 'بيانات غير صالحة' }, { status: 400 });
   }
 
+  // Attach user_id only if a logged-in user actually exists in the DB.
+  // A stale session cookie can reference a user that no longer exists,
+  // which would otherwise trigger a foreign-key violation on insert.
   const session = await verifyUserSession();
+  let validUserId: string | null = null;
+  if (session?.userId) {
+    const existingUser = await prisma.user.findUnique({
+      where: { id: session.userId },
+      select: { id: true },
+    });
+    validUserId = existingUser ? session.userId : null;
+  }
 
   const request = await prisma.propertyRequest.create({
     data: {
       ...result.data,
       email:   result.data.email || null,
-      user_id: session?.userId ?? null,
+      user_id: validUserId,
     },
   });
 

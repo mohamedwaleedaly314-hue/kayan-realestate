@@ -45,3 +45,7 @@ prisma/migrations/
 
 # uploaded files (dev only — use Supabase Storage in production)
 /public/uploads/
+
+.vercel
+
+dev-server.log

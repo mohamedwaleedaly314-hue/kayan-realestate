@@ -48,8 +48,18 @@ export async function POST(req: NextRequest) {
     }
   }
 
-  // Attach user_id if a user is logged in (for data collection)
+  // Attach user_id only if a logged-in user actually exists in the DB.
+  // A stale session cookie can reference a user that no longer exists,
+  // which would otherwise trigger a foreign-key violation on insert.
   const userSession = await verifyUserSession();
+  let validUserId: string | null = null;
+  if (userSession?.userId) {
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userSession.userId },
+      select: { id: true },
+    });
+    validUserId = existingUser ? userSession.userId : null;
+  }
 
   const lead = await prisma.lead.create({
     data: {
@@ -57,7 +67,7 @@ export async function POST(req: NextRequest) {
       phone,
       message: message ?? null,
       property_id: property_id ?? null,
-      user_id: userSession?.userId ?? null,
+      user_id: validUserId,
       source,
       status: 'NEW',
     },

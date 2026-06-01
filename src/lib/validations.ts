@@ -41,7 +41,7 @@ export const leadSchema = z.object({
     .string()
     .regex(/^[0-9+]{10,15}$/, 'رقم الهاتف غير صحيح'),
   message: z.string().max(1000).optional(),
-  property_id: z.string().cuid().optional().nullable(),
+  property_id: z.string().min(1).optional().nullable(),
   source: z.enum(['WEBSITE', 'WHATSAPP', 'PHONE', 'REFERRAL']).default('WEBSITE'),
 });
 

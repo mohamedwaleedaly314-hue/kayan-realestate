@@ -44,8 +44,17 @@ function checkSubmitLimit(ip: string): boolean {
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-  // Check if a registered user is submitting (optional — works anonymously too)
+  // Check if a registered user is submitting (optional — works anonymously too).
+  // Verify the user still exists to avoid a foreign-key violation from a stale session.
   const userSession = await verifyUserSession();
+  let validUserId: string | null = null;
+  if (userSession?.userId) {
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userSession.userId },
+      select: { id: true },
+    });
+    validUserId = existingUser ? userSession.userId : null;
+  }
 
   if (!checkSubmitLimit(ip)) {
     return NextResponse.json(
@@ -110,7 +119,7 @@ export async function POST(req: NextRequest) {
             email:    (owner_email && owner_email !== '') ? owner_email : null,
             whatsapp: (owner_whatsapp && owner_whatsapp !== '') ? owner_whatsapp : null,
             show_contact: false,
-            user_id: userSession?.userId ?? null, // link to user account if logged in
+            user_id: validUserId, // link to user account if logged in (verified to exist)
           },
         },
         images: image_urls?.length ? {

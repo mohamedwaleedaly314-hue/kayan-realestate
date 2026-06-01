@@ -4,7 +4,7 @@ import { verifySession } from '@/lib/auth';
 import { z } from 'zod';
 
 const imageSchema = z.object({
-  property_id: z.string().cuid(),
+  property_id: z.string().min(1),
   url: z.string().min(1), // accept both full URLs (Supabase) and relative paths (/uploads/...)
   alt_text: z.string().max(200).optional().nullable(),
   sort_order: z.number().int().min(0).default(0),
@@ -56,7 +56,7 @@ export async function PATCH(req: NextRequest) {
   }
 
   // Bulk reorder
-  const reorderSchema = z.array(z.object({ id: z.string().cuid(), sort_order: z.number().int() }));
+  const reorderSchema = z.array(z.object({ id: z.string().min(1), sort_order: z.number().int() }));
   const result = reorderSchema.safeParse(body);
   if (!result.success) return NextResponse.json({ error: 'بيانات غير صالحة' }, { status: 400 });
 
