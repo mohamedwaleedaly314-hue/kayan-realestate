@@ -16,6 +16,12 @@ export async function POST(req: NextRequest) {
     );
   }
 
+  // Login required — visitors must register before sending an inquiry.
+  const session = await verifyUserSession();
+  if (!session) {
+    return NextResponse.json({ error: 'يجب تسجيل الدخول أولاً' }, { status: 401 });
+  }
+
   let body: unknown;
   try {
     body = await req.json();
@@ -51,14 +57,13 @@ export async function POST(req: NextRequest) {
   // Attach user_id only if a logged-in user actually exists in the DB.
   // A stale session cookie can reference a user that no longer exists,
   // which would otherwise trigger a foreign-key violation on insert.
-  const userSession = await verifyUserSession();
   let validUserId: string | null = null;
-  if (userSession?.userId) {
+  if (session.userId) {
     const existingUser = await prisma.user.findUnique({
-      where: { id: userSession.userId },
+      where: { id: session.userId },
       select: { id: true },
     });
-    validUserId = existingUser ? userSession.userId : null;
+    validUserId = existingUser ? session.userId : null;
   }
 
   const lead = await prisma.lead.create({

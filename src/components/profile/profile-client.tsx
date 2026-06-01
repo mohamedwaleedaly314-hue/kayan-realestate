@@ -109,7 +109,7 @@ export default function ProfileClient({ user, savedProperties, myLeads, myListin
               </div>
               <div className="text-white">
                 <h1 className="text-2xl font-bold">{user.name}</h1>
-                <p className="text-ivory/70 text-sm mt-0.5">{user.email}</p>
+                <p className="text-ivory/70 text-sm mt-0.5" dir="ltr">{user.phone ?? ''}</p>
               </div>
               <Button variant="outline" size="sm" onClick={handleLogout}
                 className="mr-auto border-white/30 text-white hover:bg-white/10 hover:text-white gap-2">
@@ -137,12 +137,14 @@ export default function ProfileClient({ user, savedProperties, myLeads, myListin
         <div className="container-kayan py-8">
           {/* Contact info */}
           <div className="bg-card rounded-2xl border border-border p-5 mb-6 flex flex-wrap gap-4 text-sm">
-            <span className="flex items-center gap-2 text-muted-foreground">
-              <Mail className="w-4 h-4 text-gold" /> {user.email}
-            </span>
             {user.phone && (
-              <span className="flex items-center gap-2 text-muted-foreground">
+              <span className="flex items-center gap-2 text-muted-foreground" dir="ltr">
                 <Phone className="w-4 h-4 text-gold" /> {user.phone}
+              </span>
+            )}
+            {user.email && !user.email.endsWith('@phone.kayan') && (
+              <span className="flex items-center gap-2 text-muted-foreground">
+                <Mail className="w-4 h-4 text-gold" /> {user.email}
               </span>
             )}
           </div>

@@ -41,6 +41,11 @@ export default function RequestPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       });
+      if (res.status === 401) {
+        toast.error('سجّل دخولك أولاً');
+        window.location.href = '/auth/signin?from=/request';
+        return;
+      }
       if (!res.ok) throw new Error();
       setSubmitted(true);
     } catch {

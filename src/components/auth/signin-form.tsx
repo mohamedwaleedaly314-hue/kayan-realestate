@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Building2, Eye, EyeOff, Mail, Lock } from 'lucide-react';
+import { Building2, Eye, EyeOff, Phone, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -17,7 +17,7 @@ export default function SignInForm() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [form, setForm] = useState({ email: '', password: '' });
+  const [form, setForm] = useState({ phone: '', password: '' });
 
   function setField(field: string, value: string) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -27,7 +27,7 @@ export default function SignInForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const errs: Record<string, string> = {};
-    if (!form.email.includes('@')) errs.email = 'بريد إلكتروني غير صحيح';
+    if (!/^[0-9+]{10,15}$/.test(form.phone.trim())) errs.phone = 'رقم الهاتف غير صحيح (01xxxxxxxxx)';
     if (!form.password) errs.password = 'أدخل كلمة المرور';
     if (Object.keys(errs).length) { setErrors(errs); return; }
 
@@ -61,22 +61,22 @@ export default function SignInForm() {
             <span className="text-2xl font-bold text-navy dark:text-ivory">كيان للعقارات</span>
           </Link>
           <h1 className="text-2xl font-bold text-foreground">تسجيل الدخول</h1>
-          <p className="text-muted-foreground text-sm mt-1">ادخل على حسابك لمتابعة عقاراتك المحفوظة</p>
+          <p className="text-muted-foreground text-sm mt-1">ادخل برقم هاتفك لمتابعة عقاراتك المحفوظة</p>
         </div>
 
         <div className="bg-card rounded-3xl shadow-sm border border-border p-8">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <Label htmlFor="email">البريد الإلكتروني</Label>
+              <Label htmlFor="phone">رقم الهاتف</Label>
               <div className="relative mt-1.5">
-                <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <Input id="email" type="email" value={form.email}
-                  onChange={(e) => setField('email', e.target.value)}
-                  placeholder="example@email.com" dir="ltr"
-                  className={`pr-10 ${errors.email ? 'border-destructive' : ''}`}
-                  autoComplete="email" />
+                <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input id="phone" type="tel" value={form.phone}
+                  onChange={(e) => setField('phone', e.target.value)}
+                  placeholder="01xxxxxxxxx" dir="ltr"
+                  className={`pr-10 ${errors.phone ? 'border-destructive' : ''}`}
+                  autoComplete="tel" />
               </div>
-              {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
+              {errors.phone && <p className="text-destructive text-xs mt-1">{errors.phone}</p>}
             </div>
 
             <div>

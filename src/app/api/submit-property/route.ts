@@ -44,9 +44,12 @@ function checkSubmitLimit(ip: string): boolean {
 
 export async function POST(req: NextRequest) {
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-  // Check if a registered user is submitting (optional — works anonymously too).
-  // Verify the user still exists to avoid a foreign-key violation from a stale session.
+  // Login required — owners must register before listing a property.
   const userSession = await verifyUserSession();
+  if (!userSession) {
+    return NextResponse.json({ error: 'يجب تسجيل الدخول أولاً' }, { status: 401 });
+  }
+  // Verify the user still exists to avoid a foreign-key violation from a stale session.
   let validUserId: string | null = null;
   if (userSession?.userId) {
     const existingUser = await prisma.user.findUnique({

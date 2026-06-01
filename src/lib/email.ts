@@ -224,7 +224,7 @@ export async function sendWelcomeEmail(userName: string, userEmail: string) {
       </p>
       <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
         <a href="${BASE_URL}/properties" style="background:#B8860B;color:#fff;padding:13px 24px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">🏠 تصفّح العقارات</a>
-        <a href="${BASE_URL}/map"        style="background:#1A2B4A;color:#fff;padding:13px 24px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">🗺️ خريطة مايو</a>
+        <a href="${BASE_URL}/request"     style="background:#1A2B4A;color:#fff;padding:13px 24px;border-radius:10px;text-decoration:none;font-size:13px;font-weight:700;">📝 اطلب عقار</a>
       </div>
     </div>
     <div style="background:#fff;border-radius:12px;padding:18px;">

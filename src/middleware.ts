@@ -44,7 +44,13 @@ export async function middleware(request: NextRequest) {
   }
 
   // ─── Protected user pages ────────────────────────────────────────
-  if (pathname.startsWith('/profile')) {
+  // Visitors may browse freely, but must register/login before any action
+  // page (their profile, listing a property, or requesting one).
+  if (
+    pathname.startsWith('/profile') ||
+    pathname.startsWith('/submit-property') ||
+    pathname.startsWith('/request')
+  ) {
     const token = request.cookies.get('user_session')?.value;
     if (!token) {
       return NextResponse.redirect(new URL(`/auth/signin?from=${encodeURIComponent(pathname)}`, request.url));
@@ -52,7 +58,7 @@ export async function middleware(request: NextRequest) {
     try {
       await jwtVerify(token, JWT_SECRET);
     } catch {
-      const res = NextResponse.redirect(new URL('/auth/signin', request.url));
+      const res = NextResponse.redirect(new URL(`/auth/signin?from=${encodeURIComponent(pathname)}`, request.url));
       res.cookies.delete('user_session');
       return res;
     }
@@ -62,5 +68,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/admin/:path*', '/auth/:path*', '/profile/:path*'],
+  matcher: ['/admin/:path*', '/auth/:path*', '/profile/:path*', '/submit-property/:path*', '/request/:path*'],
 };

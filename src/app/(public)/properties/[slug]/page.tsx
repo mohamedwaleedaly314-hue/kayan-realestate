@@ -7,7 +7,6 @@ import { prisma } from '@/lib/prisma';
 import { verifyUserSession } from '@/lib/user-auth';
 import PropertyGallery from '@/components/properties/property-gallery';
 import PropertyDetails from '@/components/properties/property-details';
-import PropertyMap from '@/components/properties/property-map';
 import LeadForm from '@/components/properties/lead-form';
 import SimilarProperties from '@/components/properties/similar-properties';
 import SocialShare from '@/components/properties/social-share';
@@ -150,9 +149,6 @@ export default async function PropertyPage({ params }: PageProps) {
                 </a>
               </div>
 
-              {property.lat && property.lng && (
-                <PropertyMap lat={property.lat} lng={property.lng} title={property.title_ar} />
-              )}
             </div>
 
             {/* Sidebar */}

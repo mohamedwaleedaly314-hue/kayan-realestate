@@ -148,6 +148,11 @@ export default function PropertySubmissionForm() {
           image_urls: form.image_urls,
         }),
       });
+      if (res.status === 401) {
+        toast.error('سجّل دخولك أولاً لعرض عقارك');
+        router.push('/auth/signin?from=/submit-property');
+        return;
+      }
       const data = await res.json();
       if (!res.ok) { toast.error(data.error ?? 'حدث خطأ'); return; }
       router.push('/submit-property/success');

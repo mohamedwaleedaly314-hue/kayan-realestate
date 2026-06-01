@@ -26,10 +26,12 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error.errors[0]?.message ?? 'بيانات غير صالحة' }, { status: 400 });
   }
 
-  // Attach user_id only if a logged-in user actually exists in the DB.
-  // A stale session cookie can reference a user that no longer exists,
-  // which would otherwise trigger a foreign-key violation on insert.
+  // Login required — visitors must register before requesting a property.
   const session = await verifyUserSession();
+  if (!session) {
+    return NextResponse.json({ error: 'يجب تسجيل الدخول أولاً' }, { status: 401 });
+  }
+  // Verify the user still exists to avoid a foreign-key violation from a stale session.
   let validUserId: string | null = null;
   if (session?.userId) {
     const existingUser = await prisma.user.findUnique({

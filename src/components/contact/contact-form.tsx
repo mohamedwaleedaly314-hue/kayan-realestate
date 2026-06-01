@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,8 @@ import toast from 'react-hot-toast';
 export default function ContactForm() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -39,6 +42,12 @@ export default function ContactForm() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(result.data),
       });
+
+      if (res.status === 401) {
+        toast.error('سجّل دخولك أولاً لإرسال رسالة');
+        router.push(`/auth/signin?from=${encodeURIComponent(pathname)}`);
+        return;
+      }
 
       if (!res.ok) {
         const err = await res.json();

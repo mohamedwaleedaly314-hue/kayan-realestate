@@ -16,13 +16,12 @@ import NotificationBell from '@/components/layout/NotificationBell';
 const navLinks = [
   { href: '/',           label: 'الرئيسية',  icon: Home },
   { href: '/properties', label: 'العقارات',   icon: Grid3X3 },
-  { href: '/map',        label: 'الخريطة',    icon: Info },
   { href: '/request',    label: 'طلب عقار',   icon: Phone },
   { href: '/about',      label: 'من نحن',     icon: Info },
   { href: '/contact',    label: 'تواصل معنا', icon: Phone },
 ];
 
-interface UserInfo { id: string; name: string; email: string }
+interface UserInfo { id: string; name: string; email: string; phone?: string | null }
 
 export default function Navbar() {
   const [scrolled,    setScrolled]   = useState(false);
@@ -188,7 +187,7 @@ export default function Navbar() {
                                       rounded-2xl shadow-xl py-1.5 z-50 animate-scale-in">
                         <div className="px-4 py-2 border-b border-border/50 mb-1">
                           <p className="text-sm font-semibold truncate">{user.name}</p>
-                          <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                          <p className="text-xs text-muted-foreground truncate" dir="ltr">{user.phone ?? ''}</p>
                         </div>
                         <Link href="/profile" onClick={() => setUserMenu(false)}
                           className="flex items-center gap-2.5 px-4 py-2.5 text-sm hover:bg-muted transition-colors rounded-lg mx-1">
@@ -294,7 +293,7 @@ export default function Navbar() {
                       </div>
                       <div className="min-w-0">
                         <p className="font-semibold text-sm truncate">{user.name}</p>
-                        <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                        <p className="text-xs text-muted-foreground truncate" dir="ltr">{user.phone ?? ''}</p>
                       </div>
                     </div>
                     <Link href="/profile"

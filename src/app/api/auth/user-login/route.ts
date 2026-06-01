@@ -6,7 +6,7 @@ import { checkRateLimit, loginLimiter } from '@/lib/rate-limit';
 import { z } from 'zod';
 
 const loginSchema = z.object({
-  email: z.string().email('البريد الإلكتروني غير صحيح'),
+  phone: z.string().regex(/^[0-9+]{10,15}$/, 'رقم الهاتف غير صحيح'),
   password: z.string().min(1, 'أدخل كلمة المرور'),
 });
 
@@ -26,13 +26,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: result.error.issues[0]?.message }, { status: 400 });
   }
 
-  const { email, password } = result.data;
-  const user = await prisma.user.findUnique({ where: { email } });
+  const { phone, password } = result.data;
+  const user = await prisma.user.findFirst({ where: { phone } });
 
   if (!user || !(await verifyPassword(password, user.password_hash))) {
-    return NextResponse.json({ error: 'البريد الإلكتروني أو كلمة المرور غير صحيحة' }, { status: 401 });
+    return NextResponse.json({ error: 'رقم الهاتف أو كلمة المرور غير صحيحة' }, { status: 401 });
   }
 
   await createUserSession(user.id, user.email, user.name);
-  return NextResponse.json({ success: true, user: { id: user.id, name: user.name, email: user.email } });
+  return NextResponse.json({ success: true, user: { id: user.id, name: user.name, phone: user.phone } });
 }

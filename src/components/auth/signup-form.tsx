@@ -72,10 +72,11 @@ export default function SignUpForm() {
     const errs: Record<string, string> = {};
     if (!form.name.trim() || form.name.trim().length < 2)
       errs.name = 'الاسم يجب أن يكون حرفين على الأقل';
-    if (!form.email.includes('@'))
-      errs.email = 'بريد إلكتروني غير صحيح';
     if (!form.phone.trim() || !/^[0-9+]{10,15}$/.test(form.phone.trim()))
       errs.phone = 'رقم الهاتف مطلوب (01xxxxxxxxx)';
+    // Email is optional — only validate format if the user typed something.
+    if (form.email.trim() && !form.email.includes('@'))
+      errs.email = 'بريد إلكتروني غير صحيح';
     if (Object.keys(errs).length) { setErrors(errs); return; }
     setStep(2);
   }
@@ -154,24 +155,11 @@ export default function SignUpForm() {
                 {errors.name && <p className="text-destructive text-xs mt-1">{errors.name}</p>}
               </div>
 
-              {/* Email */}
-              <div>
-                <Label htmlFor="email">البريد الإلكتروني <span className="text-destructive">*</span></Label>
-                <div className="relative mt-1.5">
-                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="email" type="email" value={form.email} onChange={e => set('email', e.target.value)}
-                    placeholder="example@email.com" dir="ltr"
-                    className={`pr-10 ${errors.email ? 'border-destructive' : ''}`}
-                    autoComplete="email" />
-                </div>
-                {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
-              </div>
-
-              {/* Phone — REQUIRED */}
+              {/* Phone — REQUIRED (primary identifier) */}
               <div>
                 <Label htmlFor="phone">
                   رقم الهاتف <span className="text-destructive">*</span>
-                  <span className="text-xs text-muted-foreground mr-1">(واتساب مفضّل)</span>
+                  <span className="text-xs text-muted-foreground mr-1">(تسجّل وتدخل به)</span>
                 </Label>
                 <div className="relative mt-1.5">
                   <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -182,7 +170,23 @@ export default function SignUpForm() {
                 </div>
                 {errors.phone
                   ? <p className="text-destructive text-xs mt-1">{errors.phone}</p>
-                  : <p className="text-muted-foreground text-xs mt-1">رقمك مطلوب للتواصل معك بخصوص العقارات</p>}
+                  : <p className="text-muted-foreground text-xs mt-1">رقمك هو وسيلة الدخول والتواصل معك</p>}
+              </div>
+
+              {/* Email — OPTIONAL */}
+              <div>
+                <Label htmlFor="email">
+                  البريد الإلكتروني
+                  <span className="text-muted-foreground font-normal text-xs mr-1">(اختياري)</span>
+                </Label>
+                <div className="relative mt-1.5">
+                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input id="email" type="email" value={form.email} onChange={e => set('email', e.target.value)}
+                    placeholder="example@email.com" dir="ltr"
+                    className={`pr-10 ${errors.email ? 'border-destructive' : ''}`}
+                    autoComplete="email" />
+                </div>
+                {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
               </div>
 
               <Button type="button" variant="gold" size="lg" className="w-full mt-2" onClick={nextStep}>

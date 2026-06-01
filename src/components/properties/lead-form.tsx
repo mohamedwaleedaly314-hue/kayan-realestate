@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { usePathname, useRouter } from 'next/navigation';
 import { Phone, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,6 +17,8 @@ interface LeadFormProps {
 export default function LeadForm({ propertyId, propertyTitle }: LeadFormProps) {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const router = useRouter();
+  const pathname = usePathname();
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -45,6 +48,12 @@ export default function LeadForm({ propertyId, propertyTitle }: LeadFormProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(result.data),
       });
+
+      if (res.status === 401) {
+        toast.error('سجّل دخولك أولاً لإرسال الاستفسار');
+        router.push(`/auth/signin?from=${encodeURIComponent(pathname)}`);
+        return;
+      }
 
       if (!res.ok) {
         const err = await res.json();
