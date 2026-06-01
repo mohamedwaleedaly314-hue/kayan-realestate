@@ -2,22 +2,22 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Building2, Phone, CheckCircle2 } from 'lucide-react';
+import { Building2, Mail, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import toast from 'react-hot-toast';
 
 export default function ForgotPasswordPage() {
-  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);
   const [error, setError] = useState('');
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!/^[0-9+]{10,15}$/.test(phone.trim())) {
-      setError('رقم الهاتف غير صحيح (01xxxxxxxxx)');
+    if (!email.includes('@')) {
+      setError('أدخل بريداً إلكترونياً صحيحاً');
       return;
     }
     setError('');
@@ -26,7 +26,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch('/api/auth/forgot-password', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: phone.trim() }),
+        body: JSON.stringify({ email: email.trim() }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'حدث خطأ');
@@ -50,7 +50,7 @@ export default function ForgotPasswordPage() {
           </Link>
           <h1 className="text-2xl font-bold text-foreground">نسيت كلمة المرور؟</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            أدخل رقم هاتفك وهنبعتلك رابط إعادة التعيين على واتساب
+            أدخل بريدك الإلكتروني المسجّل وهنبعتلك رابط إعادة التعيين
           </p>
         </div>
 
@@ -62,8 +62,8 @@ export default function ForgotPasswordPage() {
               </div>
               <h2 className="font-bold text-lg mb-2">تم الإرسال!</h2>
               <p className="text-muted-foreground text-sm leading-relaxed">
-                لو رقمك مسجّل عندنا، هتلاقي رابط إعادة تعيين كلمة المرور وصلك على واتساب.
-                الرابط صالح لمدة 30 دقيقة.
+                لو إيميلك مسجّل عندنا، هتلاقي رابط إعادة تعيين كلمة المرور وصلك على بريدك.
+                الرابط صالح لمدة 30 دقيقة. (راجع صندوق الـ Spam لو ما لقيتهوش)
               </p>
               <Button variant="outline" size="lg" className="w-full mt-6" asChild>
                 <Link href="/auth/signin">العودة لتسجيل الدخول</Link>
@@ -72,14 +72,14 @@ export default function ForgotPasswordPage() {
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <Label htmlFor="phone">رقم الهاتف</Label>
+                <Label htmlFor="email">البريد الإلكتروني</Label>
                 <div className="relative mt-1.5">
-                  <Phone className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input id="phone" type="tel" value={phone}
-                    onChange={(e) => { setPhone(e.target.value); setError(''); }}
-                    placeholder="01xxxxxxxxx" dir="ltr"
+                  <Mail className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input id="email" type="email" value={email}
+                    onChange={(e) => { setEmail(e.target.value); setError(''); }}
+                    placeholder="example@email.com" dir="ltr"
                     className={`pr-10 ${error ? 'border-destructive' : ''}`}
-                    autoComplete="tel" />
+                    autoComplete="email" />
                 </div>
                 {error && <p className="text-destructive text-xs mt-1">{error}</p>}
               </div>

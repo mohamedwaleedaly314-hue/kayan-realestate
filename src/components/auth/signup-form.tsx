@@ -186,7 +186,9 @@ export default function SignUpForm() {
                     className={`pr-10 ${errors.email ? 'border-destructive' : ''}`}
                     autoComplete="email" />
                 </div>
-                {errors.email && <p className="text-destructive text-xs mt-1">{errors.email}</p>}
+                {errors.email
+                  ? <p className="text-destructive text-xs mt-1">{errors.email}</p>
+                  : <p className="text-muted-foreground text-xs mt-1">يُستخدم لاستعادة كلمة المرور لو نسيتها — ننصح بإضافته</p>}
               </div>
 
               <Button type="button" variant="gold" size="lg" className="w-full mt-2" onClick={nextStep}>
