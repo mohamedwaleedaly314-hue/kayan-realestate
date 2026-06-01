@@ -5,6 +5,7 @@ import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { prisma } from '@/lib/prisma';
 import { verifyUserSession } from '@/lib/user-auth';
+import { OFFICE_WHATSAPP } from '@/lib/site';
 import PropertyGallery from '@/components/properties/property-gallery';
 import PropertyDetails from '@/components/properties/property-details';
 import LeadForm from '@/components/properties/lead-form';
@@ -92,7 +93,7 @@ export default async function PropertyPage({ params }: PageProps) {
   }
 
   const showOwner = property.owner?.show_contact ?? false;
-  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '201234567890';
+  const whatsapp = OFFICE_WHATSAPP;
 
   return (
     <>

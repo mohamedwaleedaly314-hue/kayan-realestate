@@ -12,6 +12,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { formatPrice, formatDate, getPropertyTypeLabel } from '@/lib/utils';
+import { OFFICE_WHATSAPP } from '@/lib/site';
 import toast from 'react-hot-toast';
 import Navbar from '@/components/layout/navbar';
 import Footer from '@/components/layout/footer';
@@ -313,7 +314,7 @@ export default function ProfileClient({ user, savedProperties, myLeads, myListin
                         <div className="px-4 py-2 border-t border-border/50 bg-muted/20 flex items-center justify-between text-xs text-muted-foreground">
                           <span>تاريخ التقديم: {new Date(p.created_at).toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
                           <Link
-                            href={`https://wa.me/${process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '201234567890'}?text=${encodeURIComponent(`مرحباً، أريد الاستفسار عن إعلاني: ${p.title_ar}`)}`}
+                            href={`https://wa.me/${OFFICE_WHATSAPP}?text=${encodeURIComponent(`مرحباً، أريد الاستفسار عن إعلاني: ${p.title_ar}`)}`}
                             target="_blank" rel="noopener noreferrer"
                             className="text-[#25D366] font-semibold hover:underline"
                           >

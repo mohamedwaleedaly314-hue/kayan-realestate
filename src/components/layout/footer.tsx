@@ -1,8 +1,9 @@
 import Link from 'next/link';
-import { Building2, Phone, MapPin, Mail } from 'lucide-react';
+import { Building2, Phone, MapPin, MessageCircle } from 'lucide-react';
+import { OFFICE_PHONE, OFFICE_WHATSAPP } from '@/lib/site';
 
 export default function Footer() {
-  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '201234567890';
+  const whatsapp = OFFICE_WHATSAPP;
 
   return (
     <footer className="bg-navy text-ivory/80 pt-16 pb-8">
@@ -56,6 +57,12 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-4 h-4 text-gold shrink-0" />
+                <a href={`tel:${OFFICE_PHONE}`} className="hover:text-gold transition-colors" dir="ltr">
+                  {OFFICE_PHONE}
+                </a>
+              </li>
+              <li className="flex items-center gap-3">
+                <MessageCircle className="w-4 h-4 text-gold shrink-0" />
                 <a
                   href={`https://wa.me/${whatsapp}`}
                   className="hover:text-gold transition-colors"
@@ -63,12 +70,6 @@ export default function Footer() {
                   rel="noopener noreferrer"
                 >
                   واتساب
-                </a>
-              </li>
-              <li className="flex items-center gap-3">
-                <Mail className="w-4 h-4 text-gold shrink-0" />
-                <a href="mailto:info@kayan-realestate.com" className="hover:text-gold transition-colors">
-                  info@kayan-realestate.com
                 </a>
               </li>
             </ul>

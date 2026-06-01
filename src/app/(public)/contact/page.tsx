@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import ContactForm from '@/components/contact/contact-form';
-import { MapPin, Phone, Clock } from 'lucide-react';
+import { MapPin, Phone, Clock, MessageCircle } from 'lucide-react';
 import { getWhatsAppLink } from '@/lib/utils';
+import { OFFICE_PHONE, OFFICE_WHATSAPP } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'تواصل معنا',
@@ -9,7 +10,7 @@ export const metadata: Metadata = {
 };
 
 export default function ContactPage() {
-  const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '201234567890';
+  const phone = OFFICE_WHATSAPP;
 
   return (
     <div className="pt-20 min-h-screen bg-background">
@@ -35,6 +36,13 @@ export default function ContactPage() {
                   },
                   {
                     icon: Phone,
+                    title: 'اتصل بنا',
+                    desc: OFFICE_PHONE,
+                    link: `tel:${OFFICE_PHONE}`,
+                    linkLabel: 'اتصل الآن',
+                  },
+                  {
+                    icon: MessageCircle,
                     title: 'واتساب',
                     desc: 'متاح للتواصل والاستفسارات',
                     link: getWhatsAppLink(phone, 'السلام عليكم، أريد استشارة عقارية'),

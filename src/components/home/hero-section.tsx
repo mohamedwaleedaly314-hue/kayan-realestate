@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import HeroSearch from './hero-search';
+import { OFFICE_WHATSAPP } from '@/lib/site';
 
 export default function HeroSection() {
-  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '201234567890';
+  const whatsapp = OFFICE_WHATSAPP;
 
   return (
     <section className="relative min-h-screen flex items-center justify-center overflow-hidden">

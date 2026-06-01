@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -12,8 +12,23 @@ import toast from 'react-hot-toast';
 export default function ContactForm() {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const router = useRouter();
   const pathname = usePathname();
+
+  // Login is required to send a message, so prefill from the user's account.
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user) {
+          setName(d.user.name ?? '');
+          setPhone(d.user.phone ?? '');
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -83,11 +98,13 @@ export default function ContactForm() {
       <form onSubmit={handleSubmit} className="space-y-5">
         <div>
           <Label htmlFor="c-name">الاسم الكامل *</Label>
-          <Input id="c-name" name="name" placeholder="اسمك" required minLength={2} className="mt-1.5" />
+          <Input id="c-name" name="name" placeholder="اسمك" required minLength={2} className="mt-1.5"
+            value={name} onChange={(e) => setName(e.target.value)} />
         </div>
         <div>
           <Label htmlFor="c-phone">رقم الهاتف *</Label>
-          <Input id="c-phone" name="phone" type="tel" placeholder="01xxxxxxxxx" required className="mt-1.5" dir="ltr" />
+          <Input id="c-phone" name="phone" type="tel" placeholder="01xxxxxxxxx" required className="mt-1.5" dir="ltr"
+            value={phone} onChange={(e) => setPhone(e.target.value)} />
         </div>
         <div>
           <Label htmlFor="c-message">رسالتك</Label>

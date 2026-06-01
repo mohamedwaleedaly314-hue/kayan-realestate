@@ -2,9 +2,10 @@
 
 import { MessageCircle } from 'lucide-react';
 import { getWhatsAppLink } from '@/lib/utils';
+import { OFFICE_WHATSAPP } from '@/lib/site';
 
 export default function WhatsAppButton() {
-  const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '201234567890';
+  const phone = OFFICE_WHATSAPP;
   const message = 'السلام عليكم، أريد الاستفسار عن عقار من موقع كيان للعقارات';
 
   return (

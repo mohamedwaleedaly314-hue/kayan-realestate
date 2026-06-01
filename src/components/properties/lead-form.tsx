@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { Phone, Send } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -17,8 +17,24 @@ interface LeadFormProps {
 export default function LeadForm({ propertyId, propertyTitle }: LeadFormProps) {
   const [loading, setLoading] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
   const router = useRouter();
   const pathname = usePathname();
+
+  // Login is required to send an inquiry, so prefill from the user's account
+  // instead of making them retype what we already know.
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.user) {
+          setName(d.user.name ?? '');
+          setPhone(d.user.phone ?? '');
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -100,6 +116,8 @@ export default function LeadForm({ propertyId, propertyTitle }: LeadFormProps) {
             required
             minLength={2}
             className="mt-1.5"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
           />
         </div>
         <div>
@@ -112,6 +130,8 @@ export default function LeadForm({ propertyId, propertyTitle }: LeadFormProps) {
             required
             className="mt-1.5"
             dir="ltr"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
           />
         </div>
         <div>

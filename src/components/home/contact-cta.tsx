@@ -2,9 +2,10 @@ import Link from 'next/link';
 import { MessageCircle, Phone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getWhatsAppLink } from '@/lib/utils';
+import { OFFICE_WHATSAPP } from '@/lib/site';
 
 export default function ContactCTA() {
-  const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER ?? '201234567890';
+  const phone = OFFICE_WHATSAPP;
 
   return (
     <section className="section-padding bg-ivory dark:bg-navy-900">

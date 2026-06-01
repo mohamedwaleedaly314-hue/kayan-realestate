@@ -3,6 +3,8 @@
  * Provider: Resend (https://resend.com — 3000 emails/month free)
  */
 
+import { OFFICE_WHATSAPP } from './site';
+
 const FROM_EMAIL  = process.env.EMAIL_FROM   ?? 'كيان للعقارات <onboarding@resend.dev>';
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL  ?? 'mohamedwaleedaly314@gmail.com';
 const BASE_URL    = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
@@ -461,7 +463,7 @@ export async function sendListingApprovedEmail(data: {
     </div>
 
     <div style="text-align:center;">
-      <a href="https://wa.me/201000000000"
+      <a href="https://wa.me/${OFFICE_WHATSAPP}"
         style="background:#25D366;color:#fff;padding:12px 24px;border-radius:10px;
         text-decoration:none;font-size:13px;font-weight:700;display:inline-block;">
         📲 تواصل مع المكتب على واتساب
@@ -510,7 +512,7 @@ export async function sendListingRejectedEmail(data: {
     </div>
 
     <div style="text-align:center;">
-      <a href="https://wa.me/201000000000"
+      <a href="https://wa.me/${OFFICE_WHATSAPP}"
         style="background:#25D366;color:#fff;padding:13px 28px;border-radius:12px;
         text-decoration:none;font-size:14px;font-weight:700;display:inline-block;">
         📲 تواصل مع فريق كيان
